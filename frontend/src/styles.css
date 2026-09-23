@@ -204,6 +204,17 @@ select {
   overflow: auto;
 }
 
+.list-total {
+  padding: 10px 14px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.list-total strong {
+  margin-left: 4px;
+  color: var(--text, #1f2d33);
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

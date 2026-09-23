@@ -25,7 +25,8 @@ export default function FeedEvents() {
   async function load() {
     const [ps, es] = await Promise.all([
       api<Pond[]>('/api/ponds'),
-      api<FeedEvent[]>('/api/feed-events'),
+      // 近七日列表,与看板汇总共用后端同一东八区划界函数
+      api<FeedEvent[]>('/api/feed-events?lastDays=7'),
     ])
     setPonds(ps)
     setRows(es)
@@ -41,11 +42,16 @@ export default function FeedEvents() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
+    if (!form.operatorName.trim()) {
+      setError('操作人不能为空')
+      return
+    }
     try {
       await api('/api/feed-events', {
         method: 'POST',
         body: JSON.stringify({
           ...form,
+          operatorName: form.operatorName.trim(),
           fedAt: new Date(form.fedAt).toISOString(),
         }),
       })
@@ -71,11 +77,14 @@ export default function FeedEvents() {
     return p ? `${p.pondCode} (${p.species})` : `#${id}`
   }
 
+  // 即“近七日列表过滤后的千克合计”,应与看板汇总卡完全相等
+  const totalKg = rows.reduce((sum, r) => sum + r.amountKg, 0)
+
   return (
     <div>
       <header className="page-header">
         <h1>投喂事件</h1>
-        <p className="muted">记录饵料类型、投喂量与操作人</p>
+        <p className="muted">记录饵料类型、投喂量与操作人 · 列表与汇总均按东八区近 7 日</p>
       </header>
       {error && <div className="error">{error}</div>}
 
@@ -136,6 +145,10 @@ export default function FeedEvents() {
       </form>
 
       <div className="table-wrap">
+        <div className="list-total muted">
+          东八区近 7 日列表合计:<strong>{totalKg.toFixed(2)} kg</strong>
+          (应与看板「近 7 日投喂总量」一致)
+        </div>
         <table>
           <thead>
             <tr>

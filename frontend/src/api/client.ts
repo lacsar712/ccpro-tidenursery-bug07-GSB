@@ -23,7 +23,12 @@ export async function api<T>(
   const token = getToken()
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
-  const res = await fetch(path, { ...options, headers })
+  const res = await fetch(path, {
+    ...options,
+    headers,
+    // 不许假缓存:每次都回源,改完投喂重量后重拉必须拿到最新汇总/列表
+    cache: 'no-store',
+  })
   if (res.status === 204) return undefined as T
 
   const text = await res.text()
