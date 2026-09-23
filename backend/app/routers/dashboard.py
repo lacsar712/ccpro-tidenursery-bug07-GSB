@@ -11,6 +11,7 @@ from app.models.pond import Pond
 from app.models.user import User
 from app.models.water_sample import WaterSample
 from app.schemas.dashboard import DashboardStats
+from app.time_bounds import local_window_start
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
@@ -31,12 +32,12 @@ def get_stats(
         .scalar()
         or 0
     )
-    from app.time_bounds import utc_days_ago
 
-    # dashboard uses UTC day window
+    # 与投喂列表 lastDays=7 共用同一个东八区划界函数：
+    # 汇总卡的千克合计始终等于列表过滤后各行手工相加。
     feed_kg_last_7d = (
         db.query(func.coalesce(func.sum(FeedEvent.amount_kg), 0.0))
-        .filter(FeedEvent.fed_at >= utc_days_ago(7))
+        .filter(FeedEvent.fed_at >= local_window_start(7))
         .scalar()
         or 0.0
     )

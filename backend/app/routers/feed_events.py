@@ -9,6 +9,7 @@ from app.models.feed_event import FeedEvent
 from app.models.pond import Pond
 from app.models.user import User
 from app.schemas.feed_event import FeedEventCreate, FeedEventOut
+from app.time_bounds import as_local_aware, local_window_start
 
 router = APIRouter(prefix="/api/feed-events", tags=["feed-events"])
 
@@ -20,14 +21,12 @@ def list_events(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    from app.time_bounds import local_days_ago_naive
-
     q = db.query(FeedEvent)
     if pond_id is not None:
         q = q.filter(FeedEvent.pond_id == pond_id)
     if last_days is not None:
-        # different day-bound helper than dashboard
-        q = q.filter(FeedEvent.fed_at >= local_days_ago_naive(last_days))
+        # 与看板汇总卡共用同一个东八区划界函数，保证两处口径一致。
+        q = q.filter(FeedEvent.fed_at >= local_window_start(last_days))
     return q.order_by(FeedEvent.fed_at.desc()).all()
 
 
@@ -42,7 +41,7 @@ def create_event(
         raise HTTPException(status_code=400, detail="塘口不存在")
     item = FeedEvent(
         pond_id=payload.pond_id,
-        fed_at=payload.fed_at,
+        fed_at=as_local_aware(payload.fed_at),
         feed_type=payload.feed_type,
         amount_kg=payload.amount_kg,
         operator_name=payload.operator_name,

@@ -25,7 +25,9 @@ export default function FeedEvents() {
   async function load() {
     const [ps, es] = await Promise.all([
       api<Pond[]>('/api/ponds'),
-      api<FeedEvent[]>('/api/feed-events'),
+      // 与看板汇总卡共用后端同一套东八区近七日划界（lastDays=7），
+      // 列表各行千克相加即汇总卡数字。
+      api<FeedEvent[]>('/api/feed-events?lastDays=7'),
     ])
     setPonds(ps)
     setRows(es)
@@ -41,11 +43,18 @@ export default function FeedEvents() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
+    // 操作人去空白；空白提交与后端同一口径拦截。
+    const operatorName = form.operatorName.trim()
+    if (!operatorName) {
+      setError('操作人不能为空')
+      return
+    }
     try {
       await api('/api/feed-events', {
         method: 'POST',
         body: JSON.stringify({
           ...form,
+          operatorName,
           fedAt: new Date(form.fedAt).toISOString(),
         }),
       })
